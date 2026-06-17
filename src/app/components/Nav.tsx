@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 interface NavProps {
-  active: "knowledge" | "preview";
+  active: "knowledge" | "preview" | "prospects";
 }
 
 export default function Nav({ active }: NavProps) {
@@ -32,6 +32,15 @@ export default function Nav({ active }: NavProps) {
             }}
           >
             Sequence Preview
+          </Link>
+          <Link
+            href="/prospects"
+            style={{
+              ...styles.tab,
+              ...(active === "prospects" ? styles.tabActive : {}),
+            }}
+          >
+            Prospects
           </Link>
         </div>
       </div>
