@@ -255,23 +255,42 @@ export default function ProspectsPage() {
   };
 
   // --- Upload stage ---
+  const handleCSVText = useCallback((text: string) => {
+    const { headers, rows } = parseCSV(text);
+    if (headers.length === 0) {
+      showToast("Could not parse CSV — check the file format");
+      return;
+    }
+    setRawHeaders(headers);
+    setRawRows(rows);
+    setColumnMap(autoMapColumns(headers));
+    setStage("map");
+    showToast(`${rows.length} rows detected`);
+  }, []);
+
   const handleFile = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const { headers, rows } = parseCSV(text);
-      if (headers.length === 0) {
-        showToast("Could not parse CSV — check the file format");
-        return;
-      }
-      setRawHeaders(headers);
-      setRawRows(rows);
-      setColumnMap(autoMapColumns(headers));
-      setStage("map");
-      showToast(`${rows.length} rows detected`);
+      handleCSVText(e.target?.result as string);
     };
     reader.readAsText(file);
-  }, []);
+  }, [handleCSVText]);
+
+  const [loadingPrebuilt, setLoadingPrebuilt] = useState(false);
+
+  const loadPrebuiltList = async () => {
+    setLoadingPrebuilt(true);
+    try {
+      const res = await fetch("/prospects-ep-hf.csv");
+      if (!res.ok) throw new Error("Failed to fetch");
+      const text = await res.text();
+      handleCSVText(text);
+    } catch {
+      showToast("Failed to load prospect list");
+    } finally {
+      setLoadingPrebuilt(false);
+    }
+  };
 
   // --- Map stage: apply mapping ---
   const applyMapping = () => {
@@ -415,6 +434,30 @@ export default function ProspectsPage() {
               <span style={S.formatNote}>
                 Apollo, ZoomInfo, and LinkedIn Sales Nav exports work out of the box.
               </span>
+            </div>
+
+            {/* Pre-built list loader */}
+            <div style={S.prebuiltCard}>
+              <div style={S.prebuiltLeft}>
+                <span style={S.prebuiltTitle}>EP &amp; HF Physician List</span>
+                <span style={S.prebuiltSub}>50 researched prospects — directors, chiefs, KOLs from Mount Sinai, Cleveland Clinic, Duke, Stanford, Mayo, and more</span>
+              </div>
+              <button
+                style={{
+                  ...S.prebuiltBtn,
+                  opacity: loadingPrebuilt ? 0.6 : 1,
+                }}
+                onClick={loadPrebuiltList}
+                disabled={loadingPrebuilt}
+              >
+                {loadingPrebuilt ? "Loading…" : "Load 50 Prospects →"}
+              </button>
+            </div>
+
+            <div style={S.orDivider}>
+              <span style={S.orLine} />
+              <span style={S.orText}>or upload your own</span>
+              <span style={S.orLine} />
             </div>
 
             <div
@@ -755,6 +798,15 @@ const S: Record<string, React.CSSProperties> = {
   dropText: { color: "#94a3b8", fontSize: 14, margin: "0 0 16px" },
   browseBtn: { display: "inline-block", padding: "8px 18px", fontSize: 13, fontWeight: 600, color: "#e2e8f0", background: "#1e293b", border: "1px solid #334155", borderRadius: 8, cursor: "pointer" },
   sampleBtn: { background: "none", border: "none", color: "#3b82f6", fontSize: 13, cursor: "pointer", padding: 0, fontFamily: "inherit" },
+
+  prebuiltCard: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "16px 20px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, marginBottom: 20, flexWrap: "wrap" as const },
+  prebuiltLeft: { display: "flex", flexDirection: "column" as const, gap: 4, flex: 1, minWidth: 200 },
+  prebuiltTitle: { fontSize: 14, fontWeight: 700, color: "#e2e8f0" },
+  prebuiltSub: { fontSize: 12, color: "#64748b", lineHeight: 1.5 },
+  prebuiltBtn: { padding: "10px 22px", fontSize: 13, fontWeight: 700, color: "#fff", background: "linear-gradient(135deg,#3b82f6,#2563eb)", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" as const, flexShrink: 0 },
+  orDivider: { display: "flex", alignItems: "center", gap: 12, marginBottom: 20 },
+  orLine: { flex: 1, height: 1, background: "#1e293b" },
+  orText: { fontSize: 12, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.05em", fontWeight: 600 },
 
   // Map stage
   mapGrid: { display: "flex", flexDirection: "column" as const, gap: 10, marginTop: 20 },
