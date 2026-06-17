@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, type ChangeEvent, type DragEvent } from "react";
+import { PREFILLED_KNOWLEDGE } from "../data/prefilled-knowledge";
 
 const STORAGE_KEY = "outbound-machine:product-knowledge";
 
@@ -135,8 +136,26 @@ export default function ProductKnowledgeBase() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setData(JSON.parse(stored));
-    } catch {}
+      if (stored) {
+        setData(JSON.parse(stored));
+      } else {
+        // Load prefilled data from website crawl
+        const prefilled: KnowledgeData = {
+          sections: PREFILLED_KNOWLEDGE.sections,
+          files: PREFILLED_KNOWLEDGE.files as UploadedFile[],
+          urls: PREFILLED_KNOWLEDGE.urls,
+        };
+        setData(prefilled);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(prefilled));
+      }
+    } catch {
+      const prefilled: KnowledgeData = {
+        sections: PREFILLED_KNOWLEDGE.sections,
+        files: PREFILLED_KNOWLEDGE.files as UploadedFile[],
+        urls: PREFILLED_KNOWLEDGE.urls,
+      };
+      setData(prefilled);
+    }
     setLoading(false);
   }, []);
 
